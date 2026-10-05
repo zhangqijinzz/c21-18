@@ -1096,6 +1096,20 @@ button:disabled {
   border-radius: 7px;
   font-size: 10px;
 }
+.inline-error {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.inline-error span {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+.inline-error span::before {
+  content: "•";
+  color: #c96855;
+}
 .empty-card {
   display: flex;
   align-items: center;
@@ -1466,6 +1480,53 @@ button:disabled {
   font-size: 9px;
   line-height: 1.5;
 }
+.simulation-error-card {
+  margin-bottom: 15px;
+  padding: 14px 17px;
+  color: #a45e4d;
+  background: #fff2ee;
+  border: 1px solid #f4cfc5;
+  border-radius: 10px;
+}
+.simulation-error-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #96503f;
+}
+.simulation-error-head strong {
+  font-size: 11px;
+}
+.simulation-error-list {
+  margin: 9px 0 8px;
+  padding-left: 24px;
+  font-size: 10px;
+  line-height: 1.7;
+}
+.simulation-error-card > p {
+  color: #b17a6d;
+  font-size: 9px;
+}
+.metric-grid.is-blocked .metric-card {
+  opacity: 0.72;
+}
+.timeline-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px 4px 6px;
+  color: #a45e4d;
+}
+.timeline-error ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 10px;
+  line-height: 1.7;
+}
+.footer-pulse.pulse-error {
+  background: #c96855;
+  box-shadow: 0 0 0 3px #f9e7e3;
+}
 .timeline-card {
   padding: 16px 17px 14px;
   background: #fff;
@@ -1722,6 +1783,22 @@ button:disabled {
   color: #75974c;
   background: #f0f6e7;
   border-radius: 8px;
+}
+.save-icon-blocked {
+  color: #b17466;
+  background: #fbeee9;
+}
+.save-block-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: -6px 0 18px;
+  padding: 10px 14px;
+  color: #a45e4d;
+  background: #fff2ee;
+  border: 1px solid #f4cfc5;
+  border-radius: 10px;
+  font-size: 10px;
 }
 .save-prompt {
   flex: 1;

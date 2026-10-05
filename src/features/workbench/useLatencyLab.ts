@@ -27,7 +27,10 @@ import {
   type ScenarioComparison,
 } from "../scenarios/scenarioViewModel";
 import { removeProject, updateProject } from "../projects/projectViewModel";
-import { simulateProject } from "../../shared/domain/simulation";
+import {
+  isSimulationReady,
+  simulateProject,
+} from "../../shared/domain/simulation";
 
 export type LabStatus =
   "loading" | "ready" | "editing" | "simulating" | "error" | "completed";
@@ -77,8 +80,7 @@ export function useLatencyLab() {
       ? compareScenarios(baselineScenario, comparisonScenario)
       : undefined;
   const simulationValid =
-    Boolean(activeProject) &&
-    result?.entries.length === activeProject?.nodes.length;
+    Boolean(activeProject) && Boolean(result) && isSimulationReady(result!);
 
   const selectComparisonScenario = useCallback(
     (side: "baselineId" | "comparisonId", id: string) => {
@@ -218,11 +220,7 @@ export function useLatencyLab() {
       setStatus("simulating");
       const result = simulateProject(activeProject, nextMode);
       setMode(nextMode);
-      setStatus(
-        result.warnings.some((warning) => warning.includes("循环"))
-          ? "error"
-          : "completed",
-      );
+      setStatus(isSimulationReady(result) ? "completed" : "error");
       return result;
     },
     [activeProject, mode],
@@ -232,8 +230,8 @@ export function useLatencyLab() {
     (name: string): boolean => {
       if (!activeProject) return false;
       const result = simulateProject(activeProject, mode);
-      if (result.entries.length !== activeProject.nodes.length) {
-        setNotice(result.warnings[0] ?? "请先修复链路配置再保存方案。");
+      if (!isSimulationReady(result)) {
+        setNotice(result.errors[0] ?? "请先修复链路配置再保存方案。");
         return false;
       }
       const next = saveScenario(activeProject, result, name);

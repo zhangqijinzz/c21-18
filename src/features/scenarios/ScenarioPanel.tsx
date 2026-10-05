@@ -3,9 +3,11 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   GitCompareArrows,
+  Lock,
   Plus,
   RotateCcw,
   Trash2,
+  TriangleAlert,
 } from "lucide-react";
 import type {
   LatencyProject,
@@ -15,6 +17,8 @@ import type { ScenarioComparison } from "./scenarioViewModel";
 
 interface Props {
   project: LatencyProject;
+  canSave: boolean;
+  saveBlockReason?: string;
   onSave: (name: string) => boolean;
   onRemove: (id: string) => void;
   onRestore: (id: string) => void;
@@ -33,6 +37,8 @@ function formatDuration(value: number): string {
 
 export default function ScenarioPanel({
   project,
+  canSave,
+  saveBlockReason,
   onSave,
   onRemove,
   onRestore,
@@ -56,21 +62,28 @@ export default function ScenarioPanel({
         </div>
       </div>
       <div className="save-scenario-bar">
-        <div className="save-icon">
-          <GitCompareArrows size={18} />
+        <div className={`save-icon ${canSave ? "" : "save-icon-blocked"}`}>
+          {canSave ? <GitCompareArrows size={18} /> : <Lock size={16} />}
         </div>
         <div className="save-prompt">
           <strong>将当前推演保存为方案</strong>
-          <small>保留节点、依赖、并发策略与完成预算。</small>
+          <small>
+            {canSave
+              ? "保留节点、依赖、并发策略与完成预算。"
+              : "链路配置存在错误，修复后才能保存方案。"}
+          </small>
         </div>
         <input
           className="scenario-name-input"
           placeholder={`例如：${project.title} · 并发优化`}
           value={name}
+          disabled={!canSave}
           onChange={(event) => setName(event.target.value)}
         />
         <button
           className="button button-primary"
+          disabled={!canSave}
+          title={canSave ? undefined : saveBlockReason ?? "请先修复链路配置"}
           onClick={() => {
             if (onSave(name)) setName("");
           }}
@@ -78,6 +91,12 @@ export default function ScenarioPanel({
           <Plus size={15} /> 保存快照
         </button>
       </div>
+      {!canSave && saveBlockReason && (
+        <div className="save-block-strip" role="alert">
+          <TriangleAlert size={14} />
+          <span>{saveBlockReason}</span>
+        </div>
+      )}
       {!project.scenarios.length ? (
         <div className="scenario-empty">
           <div className="empty-mark">A/B</div>

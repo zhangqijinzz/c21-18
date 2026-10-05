@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { analyzeGraph } from "../src/shared/domain/graph";
 import { EXAMPLE_PROJECT } from "../src/shared/domain/types";
-import { simulateProject } from "../src/shared/domain/simulation";
+import {
+  isSimulationReady,
+  simulateProject,
+} from "../src/shared/domain/simulation";
 import {
   addRequestNode,
   toggleDependency,
@@ -98,5 +101,89 @@ describe("request dependency graph", () => {
     expect(next.nodes).toHaveLength(1);
     expect(next.nodes[0]?.durationMs).toBe(400);
     expect(next.nodes[0]?.dependencyIds).toEqual([]);
+  });
+
+  it("separates blocking errors from warnings and keeps them out of the risk list", () => {
+    const base = {
+      ...EXAMPLE_PROJECT,
+      nodes: EXAMPLE_PROJECT.nodes.slice(0, 2),
+    };
+
+    const emptyName = {
+      ...base,
+      nodes: base.nodes.map((node, index) =>
+        index === 0 ? { ...node, name: "  " } : node,
+      ),
+    };
+    const nameResult = simulateProject(emptyName);
+    expect(nameResult.status).toBe("error");
+    expect(isSimulationReady(nameResult)).toBe(false);
+    expect(nameResult.entries).toHaveLength(0);
+    expect(nameResult.errors.join(" ")).toContain("名称不能为空");
+    expect(nameResult.warnings).toEqual([]);
+
+    const outOfRange = {
+      ...base,
+      nodes: base.nodes.map((node, index) =>
+        index === 0 ? { ...node, retryCount: 12 } : node,
+      ),
+    };
+    const retryResult = simulateProject(outOfRange);
+    expect(retryResult.status).toBe("error");
+    expect(isSimulationReady(retryResult)).toBe(false);
+    expect(retryResult.errors.join(" ")).toContain("重试次数");
+    expect(retryResult.warnings).toEqual([]);
+
+    const healthy = simulateProject(base);
+    expect(healthy.status).toBe("ok");
+    expect(healthy.errors).toEqual([]);
+    expect(isSimulationReady(healthy)).toBe(true);
+  });
+
+  it("recovers normal results after the blocking configuration is repaired", () => {
+    const base = {
+      ...EXAMPLE_PROJECT,
+      nodes: EXAMPLE_PROJECT.nodes.slice(0, 2).map((node) => ({
+        ...node,
+        jitterMs: 0,
+        timeoutMs: 1000,
+        retryCount: 0,
+        failureRate: 0,
+      })),
+    };
+    const broken = {
+      ...base,
+      nodes: base.nodes.map((node, index) =>
+        index === 0 ? { ...node, name: "" } : node,
+      ),
+    };
+    expect(simulateProject(broken).status).toBe("error");
+    const repaired = {
+      ...broken,
+      nodes: broken.nodes.map((node, index) =>
+        index === 0 ? { ...node, name: "会话校验" } : node,
+      ),
+    };
+    const result = simulateProject(repaired);
+    expect(result.status).toBe("ok");
+    expect(result.errors).toEqual([]);
+    expect(result.entries).toHaveLength(2);
+    expect(result.criticalPath.length).toBeGreaterThan(0);
+    expect(result.completionMs).toBeGreaterThan(0);
+  });
+
+  it("keeps warnings informational without blocking the simulation", () => {
+    const base = {
+      ...EXAMPLE_PROJECT,
+      nodes: EXAMPLE_PROJECT.nodes.slice(0, 2).map((node) => ({
+        ...node,
+        retryCount: 4,
+      })),
+    };
+    const result = simulateProject(base);
+    expect(result.status).toBe("ok");
+    expect(result.errors).toEqual([]);
+    expect(result.warnings.join(" ")).toContain("重试次数较高");
+    expect(isSimulationReady(result)).toBe(true);
   });
 });

@@ -5,6 +5,7 @@ import {
   Gauge,
   Play,
   ShieldAlert,
+  TriangleAlert,
 } from "lucide-react";
 import type {
   LatencyProject,
@@ -42,6 +43,7 @@ export default function SimulationPanel({
   onConcurrency,
   onRun,
 }: Props) {
+  const hasErrors = result.errors.length > 0;
   const criticalNames = result.criticalPath
     .map((id) => project.nodes.find((node) => node.id === id)?.name)
     .filter(Boolean);
@@ -100,19 +102,38 @@ export default function SimulationPanel({
           <CircleHelp size={14} /> 确定性估算，不发送真实请求
         </div>
       </div>
-      <div className="metric-grid">
+      {hasErrors && (
+        <div className="simulation-error-card" role="alert">
+          <div className="simulation-error-head">
+            <TriangleAlert size={16} />
+            <strong>链路配置存在错误，推演未运行</strong>
+          </div>
+          <ul className="simulation-error-list">
+            {result.errors.map((message, index) => (
+              <li key={`${index}-${message}`}>{message}</li>
+            ))}
+          </ul>
+          <p>请先在「请求编排」中修复以上问题，再重新运行推演。</p>
+        </div>
+      )}
+      <div className={`metric-grid ${hasErrors ? "is-blocked" : ""}`}>
         <article className="metric-card metric-primary">
           <span>
             页面完成预算 <Activity size={16} />
           </span>
-          <strong>{durationLabel(result.completionMs)}</strong>
+          <strong>
+            {hasErrors ? "—" : durationLabel(result.completionMs)}
+          </strong>
           <small>
-            {mode === "low"
-              ? "低波动情境"
-              : mode === "high"
-                ? "高波动情境"
-                : "预期情境"}{" "}
-            · {project.nodes.length} 个请求
+            {hasErrors
+              ? "推演被错误阻断"
+              : `${
+                  mode === "low"
+                    ? "低波动情境"
+                    : mode === "high"
+                      ? "高波动情境"
+                      : "预期情境"
+                } · ${project.nodes.length} 个请求`}
           </small>
           <div className="metric-spark">
             <i />
@@ -137,10 +158,18 @@ export default function SimulationPanel({
             关键链路长度 <Gauge size={16} />
           </span>
           <strong>
-            {criticalNames.length} <small>nodes</small>
+            {hasErrors ? (
+              "—"
+            ) : (
+              <>
+                {criticalNames.length} <small>nodes</small>
+              </>
+            )}
           </strong>
           <div className="critical-chips">
-            {criticalNames.length ? (
+            {hasErrors ? (
+              <span>修复错误后生成关键链路</span>
+            ) : criticalNames.length ? (
               criticalNames.map((name) => <em key={name}>{name}</em>)
             ) : (
               <span>等待输入节点</span>

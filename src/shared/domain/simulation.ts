@@ -25,6 +25,10 @@ function expectedAttempts(node: RequestNode, mode: SimulationMode): number {
   return elapsed;
 }
 
+export function isSimulationReady(result: SimulationResult): boolean {
+  return result.status === "ok" && result.errors.length === 0;
+}
+
 export function simulateProject(
   project: LatencyProject,
   mode: SimulationMode = "expected",
@@ -32,11 +36,13 @@ export function simulateProject(
   const analysis = analyzeGraph(project);
   if (analysis.validation.errors.length) {
     return {
+      status: "error",
       mode,
       completionMs: 0,
       criticalPath: [],
       entries: [],
-      warnings: analysis.validation.errors,
+      errors: [...analysis.validation.errors],
+      warnings: [],
     };
   }
 
@@ -141,10 +147,12 @@ export function simulateProject(
     warnings.push("部分节点会触发超时截断，已计入重试与退避预算");
   }
   return {
+    status: "ok",
     mode,
     completionMs: lastEntry?.endMs ?? 0,
     criticalPath: lastEntry ? (pathById.get(lastEntry.nodeId) ?? []) : [],
     entries,
+    errors: [],
     warnings,
   };
 }

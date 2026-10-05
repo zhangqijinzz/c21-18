@@ -1,3 +1,4 @@
+import { isSimulationReady } from "../../shared/domain/simulation";
 import type {
   LatencyProject,
   RequestNode,
@@ -83,12 +84,7 @@ export function saveScenario(
   result: SimulationResult,
   name: string,
 ): LatencyProject {
-  if (
-    result.warnings.some(
-      (warning) => warning.includes("检测到循环") || warning.includes("不能"),
-    )
-  )
-    return project;
+  if (!isSimulationReady(result)) return project;
   const snapshot: ScenarioSnapshot = {
     id: crypto.randomUUID(),
     name: name.trim() || `方案 ${project.scenarios.length + 1}`,

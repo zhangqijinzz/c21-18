@@ -9,7 +9,10 @@ import {
   restoreScenario,
   saveScenario,
 } from "../src/features/scenarios/scenarioViewModel";
-import { simulateProject } from "../src/shared/domain/simulation";
+import {
+  isSimulationReady,
+  simulateProject,
+} from "../src/shared/domain/simulation";
 import { EXAMPLE_PROJECT } from "../src/shared/domain/types";
 
 describe("project and scenario view models", () => {
@@ -85,5 +88,38 @@ describe("project and scenario view models", () => {
     expect(comparison.deltaMs).toBeGreaterThan(0);
     expect(comparison.changes.join(" ")).toContain("并发上限");
     expect(comparison.changes.join(" ")).toContain("耗时");
+  });
+
+  it("refuses to snapshot a configuration the simulation rejects, using the same rule", () => {
+    const base = {
+      ...EXAMPLE_PROJECT,
+      nodes: EXAMPLE_PROJECT.nodes.slice(0, 2),
+    };
+    const brokenCases = [
+      { ...base, nodes: base.nodes.map((node, i) => (i === 0 ? { ...node, name: "" } : node)) },
+      { ...base, nodes: base.nodes.map((node, i) => (i === 0 ? { ...node, retryCount: 9 } : node)) },
+      { ...base, nodes: base.nodes.map((node, i) => (i === 0 ? { ...node, failureRate: 150 } : node)) },
+      { ...base, nodes: base.nodes.map((node, i) => (i === 0 ? { ...node, durationMs: -5 } : node)) },
+    ];
+    for (const broken of brokenCases) {
+      const result = simulateProject(broken);
+      expect(isSimulationReady(result)).toBe(false);
+      expect(saveScenario(broken, result, "坏配置")).toBe(broken);
+      expect(saveScenario(broken, result, "坏配置").scenarios).toHaveLength(0);
+    }
+  });
+
+  it("still snapshots a valid configuration that only carries warnings", () => {
+    const warned = {
+      ...EXAMPLE_PROJECT,
+      nodes: EXAMPLE_PROJECT.nodes.slice(0, 2).map((node) => ({
+        ...node,
+        retryCount: 4,
+      })),
+    };
+    const result = simulateProject(warned);
+    expect(result.errors).toEqual([]);
+    expect(result.warnings.length).toBeGreaterThan(0);
+    expect(saveScenario(warned, result, "带告警").scenarios).toHaveLength(1);
   });
 });

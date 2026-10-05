@@ -48,10 +48,12 @@ export interface TimelineEntry {
 }
 
 export interface SimulationResult {
+  status: "ok" | "error";
   mode: SimulationMode;
   completionMs: number;
   criticalPath: string[];
   entries: TimelineEntry[];
+  errors: string[];
   warnings: string[];
 }
 

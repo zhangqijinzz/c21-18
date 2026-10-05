@@ -104,7 +104,11 @@ export default function GraphEditor({
             </div>
           )}
           {graph.validation.errors.length > 0 && (
-            <div className="inline-error">{graph.validation.errors[0]}</div>
+            <div className="inline-error" role="alert">
+              {graph.validation.errors.map((message, index) => (
+                <span key={`${index}-${message}`}>{message}</span>
+              ))}
+            </div>
           )}
           {project.nodes.length > 0 && (
             <div className="graph-hint">

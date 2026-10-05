@@ -63,6 +63,21 @@ export default function LatencyLabView() {
     );
 
   const active = vm.activeProject;
+  const hasSimulationErrors = (vm.result?.errors.length ?? 0) > 0;
+  const footerState =
+    vm.status === "simulating"
+      ? "running"
+      : hasSimulationErrors
+        ? "error"
+        : vm.simulationValid
+          ? "ready"
+          : "waiting";
+  const footerText = {
+    running: "推演运行中…",
+    error: "链路配置存在错误，推演被阻断",
+    ready: "推演准备完成",
+    waiting: "等待链路配置",
+  }[footerState];
   return (
     <div className="app-shell">
       <Sidebar
@@ -163,6 +178,8 @@ export default function LatencyLabView() {
           {vm.module === "scenarios" && (
             <ScenarioPanel
               project={active}
+              canSave={vm.simulationValid}
+              saveBlockReason={vm.result?.errors[0]}
               onSave={vm.saveSnapshot}
               onRemove={vm.removeSavedScenario}
               onRestore={vm.restoreSavedScenario}
@@ -192,12 +209,10 @@ export default function LatencyLabView() {
         </div>
         <footer className="main-footer">
           <span>
-            <span className="footer-pulse" />
-            {vm.status === "simulating"
-              ? "推演运行中"
-              : vm.simulationValid
-                ? "推演准备完成"
-                : "等待链路配置"}
+            <span
+              className={`footer-pulse ${footerState === "error" ? "pulse-error" : ""}`}
+            />
+            {footerText}
           </span>
           <span>
             LATENCYLAB <b>·</b> LOCAL FIRST <b>·</b> V1.0

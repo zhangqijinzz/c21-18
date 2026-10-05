@@ -2,6 +2,7 @@ import {
   Activity,
   Archive,
   Boxes,
+  CircleX,
   GitBranch,
   GitCompareArrows,
   Plus,
@@ -63,6 +64,20 @@ export default function LatencyLabView() {
     );
 
   const active = vm.activeProject;
+  const simulationErrors = vm.graphAnalysis?.validation.errors ?? [];
+  const hasSimulationErrors = simulationErrors.length > 0;
+  const isEmptyGraph = active.nodes.length === 0;
+  const footerState =
+    vm.status === "simulating"
+      ? { tone: "running", label: "推演运行中" }
+      : hasSimulationErrors
+        ? {
+            tone: "error",
+            label: `链路配置有误（${simulationErrors.length}）：${simulationErrors[0]}`,
+          }
+        : isEmptyGraph
+          ? { tone: "idle", label: "等待添加请求节点" }
+          : { tone: "ready", label: "推演准备完成" };
   return (
     <div className="app-shell">
       <Sidebar
@@ -114,9 +129,17 @@ export default function LatencyLabView() {
           </div>
         </header>
         {vm.notice && (
-          <div className="notice-banner">
+          <div
+            className={`notice-banner ${vm.status === "error" ? "notice-error" : ""}`}
+            role={vm.status === "error" ? "alert" : "status"}
+          >
             <span>
-              <Sparkles size={14} /> {vm.notice}
+              {vm.status === "error" ? (
+                <CircleX size={14} />
+              ) : (
+                <Sparkles size={14} />
+              )}{" "}
+              {vm.notice}
             </span>
             <button onClick={() => vm.setNotice("")} aria-label="关闭提示">
               <X size={14} />
@@ -163,6 +186,8 @@ export default function LatencyLabView() {
           {vm.module === "scenarios" && (
             <ScenarioPanel
               project={active}
+              canSave={vm.simulationValid}
+              blockedReason={vm.saveBlockedReason}
               onSave={vm.saveSnapshot}
               onRemove={vm.removeSavedScenario}
               onRestore={vm.restoreSavedScenario}
@@ -191,13 +216,14 @@ export default function LatencyLabView() {
           )}
         </div>
         <footer className="main-footer">
-          <span>
+          <span
+            className={`footer-status footer-${footerState.tone}`}
+            title={
+              hasSimulationErrors ? simulationErrors.join("\n") : undefined
+            }
+          >
             <span className="footer-pulse" />
-            {vm.status === "simulating"
-              ? "推演运行中"
-              : vm.simulationValid
-                ? "推演准备完成"
-                : "等待链路配置"}
+            {footerState.label}
           </span>
           <span>
             LATENCYLAB <b>·</b> LOCAL FIRST <b>·</b> V1.0

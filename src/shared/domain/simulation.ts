@@ -25,6 +25,15 @@ function expectedAttempts(node: RequestNode, mode: SimulationMode): number {
   return elapsed;
 }
 
+/**
+ * 推演、运行状态与方案保存共用的唯一可推演规则：
+ * 链路至少包含一个节点，且图校验没有错误。
+ */
+export function canSimulateProject(project: LatencyProject): boolean {
+  if (!project.nodes.length) return false;
+  return analyzeGraph(project).validation.errors.length === 0;
+}
+
 export function simulateProject(
   project: LatencyProject,
   mode: SimulationMode = "expected",
@@ -36,7 +45,8 @@ export function simulateProject(
       completionMs: 0,
       criticalPath: [],
       entries: [],
-      warnings: analysis.validation.errors,
+      errors: [...analysis.validation.errors],
+      warnings: [],
     };
   }
 
@@ -145,6 +155,7 @@ export function simulateProject(
     completionMs: lastEntry?.endMs ?? 0,
     criticalPath: lastEntry ? (pathById.get(lastEntry.nodeId) ?? []) : [],
     entries,
+    errors: [],
     warnings,
   };
 }

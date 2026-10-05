@@ -52,6 +52,7 @@ export interface SimulationResult {
   completionMs: number;
   criticalPath: string[];
   entries: TimelineEntry[];
+  errors: string[];
   warnings: string[];
 }
 

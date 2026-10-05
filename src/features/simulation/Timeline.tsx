@@ -93,7 +93,13 @@ export default function Timeline({ project, result }: Props) {
         );
       })}
       {!result.entries.length && (
-        <div className="timeline-empty">修复链路配置后即可生成时序预览。</div>
+        <div
+          className={`timeline-empty ${result.errors.length ? "is-error" : ""}`}
+        >
+          {result.errors.length
+            ? "链路配置存在错误，时序不可推演；请先修复上方列出的问题。"
+            : "添加请求节点后即可生成时序预览。"}
+        </div>
       )}
     </div>
   );

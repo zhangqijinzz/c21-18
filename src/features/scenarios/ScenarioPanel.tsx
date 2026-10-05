@@ -15,6 +15,8 @@ import type { ScenarioComparison } from "./scenarioViewModel";
 
 interface Props {
   project: LatencyProject;
+  canSave: boolean;
+  blockedReason: string;
   onSave: (name: string) => boolean;
   onRemove: (id: string) => void;
   onRestore: (id: string) => void;
@@ -33,6 +35,8 @@ function formatDuration(value: number): string {
 
 export default function ScenarioPanel({
   project,
+  canSave,
+  blockedReason,
   onSave,
   onRemove,
   onRestore,
@@ -61,16 +65,23 @@ export default function ScenarioPanel({
         </div>
         <div className="save-prompt">
           <strong>将当前推演保存为方案</strong>
-          <small>保留节点、依赖、并发策略与完成预算。</small>
+          <small>
+            {canSave
+              ? "保留节点、依赖、并发策略与完成预算。"
+              : blockedReason || "请先完成可运行的链路配置。"}
+          </small>
         </div>
         <input
           className="scenario-name-input"
           placeholder={`例如：${project.title} · 并发优化`}
           value={name}
+          disabled={!canSave}
           onChange={(event) => setName(event.target.value)}
         />
         <button
           className="button button-primary"
+          disabled={!canSave}
+          title={canSave ? "" : blockedReason || "请先完成可运行的链路配置。"}
           onClick={() => {
             if (onSave(name)) setName("");
           }}

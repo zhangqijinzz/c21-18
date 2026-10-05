@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { analyzeGraph } from "../src/shared/domain/graph";
 import { EXAMPLE_PROJECT } from "../src/shared/domain/types";
-import { simulateProject } from "../src/shared/domain/simulation";
+import {
+  canSimulateProject,
+  simulateProject,
+} from "../src/shared/domain/simulation";
 import {
   addRequestNode,
   toggleDependency,
@@ -98,5 +101,126 @@ describe("request dependency graph", () => {
     expect(next.nodes).toHaveLength(1);
     expect(next.nodes[0]?.durationMs).toBe(400);
     expect(next.nodes[0]?.dependencyIds).toEqual([]);
+  });
+
+  it("surfaces validation failures as errors separate from warnings", () => {
+    const validNode = {
+      ...EXAMPLE_PROJECT.nodes[0]!,
+      id: "ok",
+      name: "正常节点",
+      retryCount: 1,
+      dependencyIds: [],
+      fallbackNodeId: undefined,
+    };
+    const brokenNode = {
+      ...validNode,
+      id: "broken",
+      name: "   ",
+      retryCount: 9,
+    };
+    const project = {
+      ...EXAMPLE_PROJECT,
+      nodes: [validNode, brokenNode],
+    };
+    const result = simulateProject(project);
+    expect(result.errors.join(" ")).toContain("节点名称不能为空");
+    expect(result.errors.join(" ")).toContain("重试次数需在 0–8 次");
+    expect(result.entries).toHaveLength(0);
+    expect(result.completionMs).toBe(0);
+    expect(result.criticalPath).toEqual([]);
+    expect(result.warnings).toEqual([]);
+    expect(canSimulateProject(project)).toBe(false);
+  });
+
+  it("keeps warnings when the graph is otherwise runnable", () => {
+    const project = {
+      ...EXAMPLE_PROJECT,
+      nodes: [
+        {
+          id: "root",
+          name: "根节点",
+          durationMs: 200,
+          jitterMs: 0,
+          dependencyIds: [],
+          timeoutMs: 600,
+          retryCount: 5,
+          failureRate: 0,
+        },
+        {
+          id: "leaf",
+          name: "下游节点",
+          durationMs: 100,
+          jitterMs: 0,
+          dependencyIds: ["root"],
+          timeoutMs: 400,
+          retryCount: 5,
+          failureRate: 0,
+        },
+      ],
+    };
+    const result = simulateProject(project);
+    expect(result.errors).toEqual([]);
+    expect(result.entries).toHaveLength(2);
+    expect(result.warnings.join(" ")).toContain("重试次数较高");
+    expect(canSimulateProject(project)).toBe(true);
+  });
+
+  it("does not warn about multiple entries for a single-entry chain", () => {
+    const project = {
+      ...EXAMPLE_PROJECT,
+      nodes: [
+        {
+          id: "root",
+          name: "根节点",
+          durationMs: 100,
+          jitterMs: 0,
+          dependencyIds: [],
+          timeoutMs: 400,
+          retryCount: 0,
+          failureRate: 0,
+        },
+        {
+          id: "leaf",
+          name: "下游节点",
+          durationMs: 100,
+          jitterMs: 0,
+          dependencyIds: ["root"],
+          timeoutMs: 400,
+          retryCount: 0,
+          failureRate: 0,
+        },
+      ],
+    };
+    expect(analyzeGraph(project).validation.warnings.join(" ")).not.toContain(
+      "多个入口节点",
+    );
+  });
+
+  it("rejects an empty project but resumes with a normal result after repair", () => {
+    const empty = { ...EXAMPLE_PROJECT, nodes: [] };
+    expect(canSimulateProject(empty)).toBe(false);
+    expect(simulateProject(empty).completionMs).toBe(0);
+
+    const brokenNode = {
+      ...EXAMPLE_PROJECT.nodes[0]!,
+      id: "a",
+      name: "",
+      retryCount: 9,
+      dependencyIds: [],
+      fallbackNodeId: undefined,
+    };
+    const broken = { ...EXAMPLE_PROJECT, nodes: [brokenNode] };
+    expect(canSimulateProject(broken)).toBe(false);
+
+    const repaired = {
+      ...broken,
+      nodes: [{ ...brokenNode, name: "已修复", retryCount: 2 }],
+    };
+    const repairedResult = simulateProject(repaired, "expected");
+    expect(canSimulateProject(repaired)).toBe(true);
+    expect(repairedResult.errors).toEqual([]);
+    expect(repairedResult.entries).toHaveLength(1);
+    expect(repairedResult.completionMs).toBeGreaterThan(0);
+    expect(repairedResult.criticalPath).toEqual(["a"]);
   });
 });

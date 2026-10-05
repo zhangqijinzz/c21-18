@@ -98,12 +98,11 @@ export function analyzeGraph(project: LatencyProject): GraphAnalysis {
     errors.push(
       `检测到循环依赖：${cycle.map((id) => project.nodes.find((node) => node.id === id)?.name ?? id).join(" → ")}`,
     );
-  if (
-    project.nodes.some((node) => node.dependencyIds.length === 0) &&
-    project.nodes.length > 1
-  ) {
+  const entryCount = project.nodes.filter(
+    (node) => node.dependencyIds.length === 0,
+  ).length;
+  if (entryCount > 1)
     warnings.push("多个入口节点会同时开始；并发上限可能让部分入口排队");
-  }
   return { order, cycle, validation: { errors, warnings } };
 }
 

@@ -622,6 +622,14 @@ button:disabled {
   border: 0;
   cursor: pointer;
 }
+.notice-banner.notice-error {
+  color: #a45e4d;
+  background: #fff2ee;
+  border-bottom-color: #fae0d8;
+}
+.notice-banner.notice-error button {
+  color: #b46251;
+}
 .loading-screen {
   height: 100vh;
   display: flex;
@@ -1703,6 +1711,113 @@ button:disabled {
   color: #a0a9a0;
   font-size: 8px;
   line-height: 1.6;
+}
+
+/* ---- 推演错误态：错误与告警分开表达 ---- */
+.metric-grid.has-error .metric-primary {
+  background: #3a302e;
+  border-color: #3a302e;
+}
+.metric-grid.has-error .metric-primary > span:first-child svg {
+  color: #e88a75;
+}
+.metric-grid.has-error .metric-spark {
+  opacity: 0.18;
+}
+.metric-danger {
+  border-color: #f3d3ca;
+  background: #fff8f5;
+}
+.metric-danger > span:first-child {
+  color: #b46251;
+}
+.metric-danger > span:first-child svg {
+  color: #cf755e;
+}
+.metric-danger > strong {
+  color: #b04f3d;
+}
+.chip-error {
+  color: #b46251 !important;
+}
+.button-has-error {
+  background: #b46251;
+}
+.button-has-error:hover {
+  background: #c06f5d;
+}
+.simulation-errors,
+.simulation-warnings {
+  margin-bottom: 15px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  border: 1px solid;
+  font-size: 10px;
+}
+.simulation-errors {
+  color: #a45e4d;
+  background: #fff2ee;
+  border-color: #fae0d8;
+}
+.simulation-warnings {
+  color: #8a7541;
+  background: #fbf7e9;
+  border-color: #f0e8ca;
+}
+.simulation-issues-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.simulation-errors ul,
+.simulation-warnings ul {
+  margin: 7px 0 0;
+  padding-left: 17px;
+  line-height: 1.7;
+}
+.inline-error ul {
+  margin: 6px 0 0;
+  padding-left: 17px;
+  line-height: 1.7;
+}
+.inline-error strong {
+  display: block;
+  margin-bottom: 3px;
+}
+.timeline-empty.is-error {
+  color: #b46251;
+}
+
+/* ---- 底部运行状态：与推演面板共用一套规则 ---- */
+.footer-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #7d897f;
+  min-width: 0;
+}
+.footer-status .footer-pulse {
+  flex: 0 0 auto;
+}
+.footer-error {
+  color: #b46251;
+  font-weight: 600;
+}
+.footer-error .footer-pulse {
+  background: #cf755e;
+  box-shadow: 0 0 0 3px #fae7e1;
+}
+.footer-ready .footer-pulse {
+  background: #7eb34c;
+  box-shadow: 0 0 0 3px #ecf4e3;
+}
+.footer-idle .footer-pulse {
+  background: #c2c9be;
+  box-shadow: 0 0 0 3px #eef0ea;
+}
+.footer-running .footer-pulse {
+  background: #d3a93f;
+  box-shadow: 0 0 0 3px #f6edd4;
 }
 .save-scenario-bar {
   display: flex;

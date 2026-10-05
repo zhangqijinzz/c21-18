@@ -27,7 +27,10 @@ import {
   type ScenarioComparison,
 } from "../scenarios/scenarioViewModel";
 import { removeProject, updateProject } from "../projects/projectViewModel";
-import { simulateProject } from "../../shared/domain/simulation";
+import {
+  canSimulateProject,
+  simulateProject,
+} from "../../shared/domain/simulation";
 
 export type LabStatus =
   "loading" | "ready" | "editing" | "simulating" | "error" | "completed";
@@ -76,9 +79,14 @@ export function useLatencyLab() {
     baselineScenario && comparisonScenario
       ? compareScenarios(baselineScenario, comparisonScenario)
       : undefined;
-  const simulationValid =
-    Boolean(activeProject) &&
-    result?.entries.length === activeProject?.nodes.length;
+  const simulationValid = activeProject
+    ? canSimulateProject(activeProject)
+    : false;
+  const saveBlockedReason = !activeProject
+    ? ""
+    : activeProject.nodes.length === 0
+      ? "请先添加请求节点，再运行推演并保存方案。"
+      : (graphAnalysis?.validation.errors[0] ?? "");
 
   const selectComparisonScenario = useCallback(
     (side: "baselineId" | "comparisonId", id: string) => {
@@ -218,11 +226,7 @@ export function useLatencyLab() {
       setStatus("simulating");
       const result = simulateProject(activeProject, nextMode);
       setMode(nextMode);
-      setStatus(
-        result.warnings.some((warning) => warning.includes("循环"))
-          ? "error"
-          : "completed",
-      );
+      setStatus(result.errors.length ? "error" : "completed");
       return result;
     },
     [activeProject, mode],
@@ -232,8 +236,11 @@ export function useLatencyLab() {
     (name: string): boolean => {
       if (!activeProject) return false;
       const result = simulateProject(activeProject, mode);
-      if (result.entries.length !== activeProject.nodes.length) {
-        setNotice(result.warnings[0] ?? "请先修复链路配置再保存方案。");
+      if (result.errors.length || !canSimulateProject(activeProject)) {
+        setNotice(
+          result.errors[0] ?? "请先添加请求节点，再运行推演并保存方案。",
+        );
+        setStatus(result.errors.length ? "error" : "editing");
         return false;
       }
       const next = saveScenario(activeProject, result, name);
@@ -272,6 +279,7 @@ export function useLatencyLab() {
     result,
     graphAnalysis,
     simulationValid,
+    saveBlockedReason,
     status,
     module,
     setModule,
